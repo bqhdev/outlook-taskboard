@@ -62,7 +62,6 @@ tbApp.controller('taskboardController', function ($scope, GENERAL_CONFIG) {
                                             case 'backlogList':
                                                     //var tasksfolder = outlookNS.GetDefaultFolder(13);
                                                     var tasksfolder = getOutlookFolder(GENERAL_CONFIG.BACKLOG_FOLDER.Name, GENERAL_CONFIG.BACKLOG_FOLDER.Owner);
-                                                    var tasksfolder = outlookNS.GetDefaultFolder(13);// when move task back into backlog
                                                     break;
                                             case 'inprogressList':
                                                     var tasksfolder = getOutlookFolder(GENERAL_CONFIG.INPROGRESS_FOLDER.Name, GENERAL_CONFIG.INPROGRESS_FOLDER.Owner);
@@ -161,21 +160,33 @@ tbApp.controller('taskboardController', function ($scope, GENERAL_CONFIG) {
             var tasks = getOutlookFolder(path, owner).Items.Restrict(restrict);
 
             var count = tasks.Count;
+            var NoDateTimeStamp = new Date('3000-01-01');
+            var ItemDueDate = new Date();
             for (i = 1; i <= count; i++) {
                 //do not add to backlog task from other folders
-		if (!( path == "" && (
-		        tasks(i).parent.name == GENERAL_CONFIG.INPROGRESS_FOLDER.Name || 
-			tasks(i).parent.name == GENERAL_CONFIG.NEXT_FOLDER.Name ||
-			tasks(i).parent.name == GENERAL_CONFIG.FOCUS_FOLDER.Name ||
-			tasks(i).parent.name == GENERAL_CONFIG.WAITING_FOLDER.Name ||
-			tasks(i).parent.name == GENERAL_CONFIG.COMPLETED_FOLDER.Name
-			))){
+                if (tasks(i).TaskStartDate != null) {
+                    if(tasks(i).TaskStartDate > NoDateTimeStamp) { continue; }
+                }
+                else if (tasks(i).StartDate != null) {
+                    if(tasks(i).StartDate > NoDateTimeStamp) { continue; }
+                }
+                if (!( path == "" && (
+                        tasks(i).parent.name == GENERAL_CONFIG.INPROGRESS_FOLDER.Name || 
+                    tasks(i).parent.name == GENERAL_CONFIG.NEXT_FOLDER.Name ||
+                    tasks(i).parent.name == GENERAL_CONFIG.FOCUS_FOLDER.Name ||
+                    tasks(i).parent.name == GENERAL_CONFIG.WAITING_FOLDER.Name ||
+                    tasks(i).parent.name == GENERAL_CONFIG.COMPLETED_FOLDER.Name
+                    ))){
+                        ItemDueDate = tasks(i).TaskDueDate
+                        if (ItemDueDate == null) {
+                            ItemDueDate = tasks(i).DueDate
+                        }
                         array.push({
                             entryID: tasks(i).EntryID,
                             subject: tasks(i).Subject,
                             priority: tasks(i).Importance,
                             startdate: tasks(i).StartDate,
-                            duedate: new Date(tasks(i).DueDate),
+                            duedate: new Date(ItemDueDate),
                             sensitivity: tasks(i).Sensitivity,
                             categories: tasks(i).Categories,
                             notes: taskExcerpt(tasks(i).Body, GENERAL_CONFIG.TASKNOTE_EXCERPT),
